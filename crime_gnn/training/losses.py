@@ -9,17 +9,14 @@ Components
    • Regression:     Huber / Smooth-L1 / MSE (configurable)
    • Classification: Focal BCE (or plain BCE with optional pos_weight)
 2. Predictive-uniqueness regularisation
-   • Regression:     multiplicative form — penalises A_lat only where both
-                     A_sp AND A_ctx already cover an edge (true double-
-                     coverage).  Avoids penalising edges that complement only
-                     one known graph.
-   • Classification: additive form — penalises A_lat proportionally to the
-                     overlap with either A_sp or A_ctx.
+   • multiplicative form — penalises A_lat only where both A_sp AND A_ctx already cover an edge (true double-coverage).  
+      Avoids penalising edges that complement only one known graph.
+   • additive form (available but comment out) — penalises A_lat proportionally to the overlap with either A_sp or A_ctx.
 3. Sparsity regularisation  |mean(A_lat) − target|
 4. Channel-orthogonality regularisation  Cov(w_sp, w_ctx) + Cov(w_sp, w_lat) + …
 5. Floor regularisation
-   • Regression:     sp + ctx only — the latent channel must earn its weight.
-   • Classification: sp + ctx + lat.
+   • sp + ctx only — the latent channel must earn its weight.
+   • (comment out) sp + ctx + lat.
 """
 
 from typing import Dict
@@ -114,13 +111,12 @@ class CrimePredictionLoss(nn.Module):
         A_sp_exp = A_sp.unsqueeze(0).expand_as(A_lat)
         A_ctx_exp = A_ctx.unsqueeze(0).expand_as(A_lat)
 
-        if self.task_type == "regression":
-            # Multiplicative: penalise only where BOTH A_sp AND A_ctx exist.
-            # Does not punish latent edges complementing only one known graph.
-            redundancy = A_sp_exp.clamp(max=1) * A_ctx_exp.clamp(max=1)
-        else:
-            # Additive average: proportional overlap with either known graph.
-            redundancy = (A_sp_exp.clamp(max=1) + A_ctx_exp.clamp(max=1)) / 2.0
+        # Multiplicative: penalise only where BOTH A_sp AND A_ctx exist.
+        # Does not punish latent edges complementing only one known graph.
+        redundancy = A_sp_exp.clamp(max=1) * A_ctx_exp.clamp(max=1)
+        
+        # Additive average: proportional overlap with either known graph (more strict).
+        # redundancy = (A_sp_exp.clamp(max=1) + A_ctx_exp.clamp(max=1)) / 2.0
 
         l_pred_unique = (A_lat * redundancy).mean()
 
@@ -137,21 +133,21 @@ class CrimePredictionLoss(nn.Module):
         # ------------------------------------------------------------------
         # 5. Floor regularisation
         # ------------------------------------------------------------------
-        if self.task_type == "regression":
-            # Regression: floor on sp + ctx only — the latent channel must
-            # earn its weight; propping it up with regularisation would let
-            # it cannibalism the informative channels with noise.
-            l_floor = (
-                F.relu(self.alpha_min - node_w_sp.mean())
-                + F.relu(self.alpha_min - node_w_ctx.mean())
-            )
-        else:
-            # Classification: floor on all three channels.
-            l_floor = (
-                F.relu(self.alpha_min - node_w_sp.mean())
-                + F.relu(self.alpha_min - node_w_ctx.mean())
-                + F.relu(self.alpha_min - node_w_lat.mean())
-            )
+
+        # floor on sp + ctx only — the latent channel must
+        # earn its weight; propping it up with regularisation would let
+        # it cannibalism the informative channels with noise.
+        l_floor = (
+            F.relu(self.alpha_min - node_w_sp.mean())
+            + F.relu(self.alpha_min - node_w_ctx.mean())
+         )
+
+         # floor on all three channels.
+         # l_floor = (
+         #    F.relu(self.alpha_min - node_w_sp.mean())
+         #    + F.relu(self.alpha_min - node_w_ctx.mean())
+         #    + F.relu(self.alpha_min - node_w_lat.mean())
+         #)
 
         # ------------------------------------------------------------------
         # Total
