@@ -253,15 +253,6 @@ After training, three complementary analyses are produced automatically:
 
 **Pairwise edge attribution table** — every edge in the union graph is characterised by its dominant source, effective contribution per channel, and categorical type (e.g. `spatial_only`, `persistent_latent`, `all_three`).
 
----
-
-## Extending the Framework
-
-**New temporal encoder** — add a branch to `TemporalEncoder.__init__` in `crime_gnn/models/components.py` and pass the encoder name via `--temporal_encoder`.
-
-**New graph construction method** — add a function to `crime_gnn/data/graph_construction.py` and call it from `CrimeDataProcessor.compute_contextual_similarity`.
-
-**New task** — add a task branch in `CrimePredictionLoss.forward` (losses.py), `CurriculumTrainer._compute_*_metrics` (trainer.py), `plot_training_history` (visualization.py), and the `task_type` argparse option in `config.py`.
 
 ---
 
