@@ -1,4 +1,4 @@
-# Interpretable Spatio-Temporal GNN for Crime Prediction
+# PRISM: A Disentangled Spatio-Temporal GNN with Residual-Guided Graph Structure Learning for Interpretable Crime Forecasting
 
 A PyTorch-based framework for spatially and temporally interpretable crime prediction using a **disentangled, multi-graph Graph Neural Network** with two-phase curriculum training.
 
